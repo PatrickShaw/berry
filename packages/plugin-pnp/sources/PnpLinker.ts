@@ -1,13 +1,13 @@
-import {miscUtils, structUtils, formatUtils, Descriptor, LocatorHash, InstallPackageExtraApi}                                           from '@yarnpkg/core';
-import {FetchResult, Locator, Package}                                                                                                  from '@yarnpkg/core';
-import {Linker, LinkOptions, MinimalLinkOptions, Manifest, MessageName, DependencyMeta, LinkType, Installer}                            from '@yarnpkg/core';
-import {AliasFS, CwdFS, PortablePath, VirtualFS, npath, ppath, xfs}                                                                     from '@yarnpkg/fslib';
-import {generateInlinedScript, generateSplitScript, PackageRegistry, PnpApi, PnpSettings, getESMLoaderTemplate, getESMRegisterTemplate} from '@yarnpkg/pnp';
-import {UsageError}                                                                                                                     from 'clipanion';
+import {miscUtils, structUtils, formatUtils, Descriptor, LocatorHash, InstallPackageExtraApi}                   from '@yarnpkg/core';
+import {FetchResult, Locator, Package}                                                                          from '@yarnpkg/core';
+import {Linker, LinkOptions, MinimalLinkOptions, Manifest, MessageName, DependencyMeta, LinkType, Installer}    from '@yarnpkg/core';
+import {AliasFS, CwdFS, PortablePath, VirtualFS, npath, ppath, xfs}                                             from '@yarnpkg/fslib';
+import {generateInlinedScript, generateSplitScript, PackageRegistry, PnpApi, PnpSettings, getESMLoaderTemplate} from '@yarnpkg/pnp';
+import {UsageError}                                                                                             from 'clipanion';
 
-import {getPnpPath}                                                                                                                     from './index';
-import * as jsInstallUtils                                                                                                              from './jsInstallUtils';
-import * as pnpUtils                                                                                                                    from './pnpUtils';
+import {getPnpPath}                                                                                             from './index';
+import * as jsInstallUtils                                                                                      from './jsInstallUtils';
+import * as pnpUtils                                                                                            from './pnpUtils';
 
 const FORCED_UNPLUG_PACKAGES = new Set([
   // Contains native binaries
@@ -353,8 +353,7 @@ export class PnpInstaller implements Installer {
       if (!useStableLoader)
         this.opts.report.reportWarning(MessageName.EXPERIMENTAL, `ESM support for PnP uses the experimental loader API and is therefore experimental`);
 
-      const esmLoaderTemplate = useStableLoader ? getESMRegisterTemplate() : getESMLoaderTemplate();
-      await xfs.changeFilePromise(pnpPath.esmLoader, esmLoaderTemplate, {
+      await xfs.changeFilePromise(pnpPath.esmLoader, getESMLoaderTemplate({stable: useStableLoader}), {
         automaticNewlines: true,
         mode: 0o644,
       });

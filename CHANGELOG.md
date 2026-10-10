@@ -8,6 +8,7 @@ Yarn now accepts sponsors! Please take a look at our [OpenCollective](https://op
 Features in `master` can be tried out by running `yarn set version from sources` in your project.
 :::
 
+- Adds a new `pnpEnableStableLoader` setting; when enabled, the generated `.pnp.loader.mjs` registers its hooks in-thread through the stable `module.registerHooks` API (injected via `--import`) instead of the experimental loader API. Requires Node.js >=22.15.0 or >=23.5.0.
 - Fixes `preferInteractive` forcing interactive mode in non-TTY environments.
 - `node-modules` linker now honors user-defined symlinks for `<workspace>/node_modules` directories
 - `node-modules` linker supports hoisting into inner workspaces that are parents of other workspaces

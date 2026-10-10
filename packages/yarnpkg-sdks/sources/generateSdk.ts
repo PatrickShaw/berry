@@ -113,10 +113,19 @@ type TemplateOptions = {
   wrapModule?: string;
 };
 
+/**
+ * The wrappers look for this at the end of `.pnp.loader.mjs` to know whether
+ * the loader registers itself through `module.registerHooks`.
+ *
+ * @privateRemarks Copied from `@yarnpkg/pnp` because it's only a dev
+ * dependency here - the tests make sure the two don't drift apart
+ */
+export const STABLE_ESM_LOADER_MARKER = `registerStableHooks();`;
+
 const TEMPLATE = (relPnpApiPath: PortablePath, module: string, {setupEnv = false, usePnpify = false, wrapModule}: TemplateOptions) => [
   `#!/usr/bin/env node\n`,
   `\n`,
-  `const {existsSync} = require(\`fs\`);\n`,
+  `const {existsSync, readFileSync} = require(\`fs\`);\n`,
   `const {createRequire, register} = require(\`module\`);\n`,
   `const {resolve} = require(\`path\`);\n`,
   `const {pathToFileURL} = require(\`url\`);\n`,
@@ -129,12 +138,17 @@ const TEMPLATE = (relPnpApiPath: PortablePath, module: string, {setupEnv = false
   `\n`,
   `const absPnpLoaderPath = resolve(absPnpApiPath, \`../.pnp.loader.mjs\`);\n`,
   `const isPnpLoaderEnabled = existsSync(absPnpLoaderPath);\n`,
+  `// Checked at runtime rather than when generating the SDKs so the wrappers\n`,
+  `// don't go stale when pnpEnableStableLoader gets toggled\n`,
+  `const isPnpLoaderStable = isPnpLoaderEnabled && readFileSync(absPnpLoaderPath, \`utf8\`).trimEnd().endsWith(${JSON.stringify(STABLE_ESM_LOADER_MARKER)});\n`,
   `\n`,
   `if (existsSync(absPnpApiPath)) {\n`,
   `  if (!process.versions.pnp) {\n`,
   `    // Setup the environment to be able to require ${module}\n`,
   `    require(absPnpApiPath).setup();\n`,
-  `    if (isPnpLoaderEnabled && register) {\n`,
+  `    if (isPnpLoaderStable) {\n`,
+  `      require(absPnpLoaderPath);\n`,
+  `    } else if (isPnpLoaderEnabled && register) {\n`,
   `      register(pathToFileURL(absPnpLoaderPath));\n`,
   `    }\n`,
   `  }\n`,
@@ -145,7 +159,9 @@ const TEMPLATE = (relPnpApiPath: PortablePath, module: string, {setupEnv = false
     `\n`,
     `    process.env.NODE_OPTIONS = process.env.NODE_OPTIONS || \`\`;\n`,
     `    process.env.NODE_OPTIONS += \` -r \${absPnpApiPath}\`;\n`,
-    `    if (isPnpLoaderEnabled && register) {\n`,
+    `    if (isPnpLoaderStable) {\n`,
+    `      process.env.NODE_OPTIONS += \` --import \${pathToFileURL(absPnpLoaderPath)}\`;\n`,
+    `    } else if (isPnpLoaderEnabled && register) {\n`,
     `      process.env.NODE_OPTIONS += \` --experimental-loader \${pathToFileURL(absPnpLoaderPath)}\`;\n`,
     `    }\n`,
     `  }\n`,

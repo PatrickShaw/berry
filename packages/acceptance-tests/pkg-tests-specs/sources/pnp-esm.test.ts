@@ -1189,4 +1189,30 @@ describe.each(loaderModes)(`Plug'n'Play - ESM ($name)`, ({pnpEnableStableLoader}
       },
     ),
   );
+
+  it(
+    `should resolve dependencies required through createRequire from ESM`,
+    makeTemporaryEnv(
+      {
+        type: `module`,
+        dependencies: {
+          [`no-deps`]: `1.0.0`,
+        },
+      },
+      async ({path, run, source}) => {
+        await run(`install`);
+
+        await xfs.writeFilePromise(
+          ppath.join(path, `index.js`),
+          `import {createRequire} from 'module';\nconst require = createRequire(import.meta.url);\nconsole.log(require('no-deps').version)`,
+        );
+
+        await expect(run(`node`, `./index.js`)).resolves.toMatchObject({
+          code: 0,
+          stdout: `1.0.0\n`,
+          stderr: ``,
+        });
+      },
+    ),
+  );
 });

@@ -6,7 +6,6 @@
 # Mark generated files as binary to prevent git from trying to merge them
 /.pnp.*                                                 binary linguist-generated
 packages/yarnpkg-pnp/sources/esm-loader/built-loader.js binary linguist-generated
-packages/yarnpkg-pnp/sources/esm-loader/built-register.js binary linguist-generated
 packages/yarnpkg-pnp/sources/hook.js                    binary linguist-generated
 packages/yarnpkg-core/sources/worker-zip/index.js       binary linguist-generated
 packages/yarnpkg-libzip/sources/libzipAsync.js          binary linguist-generated

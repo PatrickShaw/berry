@@ -4,3 +4,4 @@ import './fspatch';
 
 export const resolve = resolveHook;
 export const load = loadHook;
+export {registerStableHooks} from './registerStableHooks';

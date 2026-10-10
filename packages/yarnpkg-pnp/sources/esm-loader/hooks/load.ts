@@ -5,30 +5,36 @@ import {fileURLToPath, pathToFileURL}                                           
 import {HAS_BROKEN_FSTAT_FOR_ZIP_FDS, SUPPORTS_IMPORT_ATTRIBUTES, SUPPORTS_IMPORT_ATTRIBUTES_ONLY, WATCH_MODE_MESSAGE_USES_ARRAYS} from '../loaderFlags';
 import * as loaderUtils                                                                                                            from '../loaderUtils';
 
+import type {MaybePromise, NextHook}                                                                                               from './types';
+
+export type LoadContext = {
+  conditions?: Array<string>;
+  format: string | null | undefined;
+  importAssertions?: {
+    type?: `json`;
+  };
+  importAttributes?: {
+    type?: `json`;
+  };
+};
+
+export type LoadResult = {format: string, source?: string, shortCircuit: boolean};
+
 // The default `load` doesn't support reading from zip files
-export function load(
+export function load<TNext extends MaybePromise<LoadResult>>(
   urlString: string,
-  context: {
-    conditions?: Array<string>;
-    format: string | null | undefined;
-    importAssertions?: {
-      type?: `json`;
-    };
-    importAttributes?: {
-      type?: `json`;
-    };
-  },
-  nextLoad: typeof load,
-): {format: string, source?: string, shortCircuit: boolean} {
+  context: LoadContext,
+  nextLoad: NextHook<LoadContext, TNext>,
+): TNext | LoadResult {
   const url = loaderUtils.tryParseURL(urlString);
   if (url?.protocol !== `file:`)
-    return nextLoad(urlString, context, nextLoad);
+    return nextLoad(urlString, context);
 
   const filePath = fileURLToPath(url);
 
   const format = loaderUtils.getFileFormat(filePath);
   if (!format)
-    return nextLoad(urlString, context, nextLoad);
+    return nextLoad(urlString, context);
 
   if (format === `json`) {
     if (SUPPORTS_IMPORT_ATTRIBUTES_ONLY) {

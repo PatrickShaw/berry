@@ -122,43 +122,38 @@ export default defineConfig([
       importURL(),
     ],
   },
-  ...[
-    {input: `loader`, output: `built-loader`},
-    {input: `register`, output: `built-register`},
-  ].map(({input, output}) =>
-    defineConfig({
-      input: `./sources/esm-loader/${input}.ts`,
-      output: {
-        file: `./sources/esm-loader/${output}.js`,
-        format: `esm`,
-        generatedCode: `es2015`,
-        banner: `/* eslint-disable */\n// @ts-nocheck\n`,
-      },
-      external: [
-        `../.pnp.cjs`,
-      ],
-      plugins: [
-        resolve({
-          extensions: [`.mjs`, `.js`, `.ts`, `.tsx`, `.json`],
-          rootDir: path.join(__dirname, `../../`),
-          jail: path.join(__dirname, `../../`),
-          preferBuiltins: true,
-        }),
-        esbuild({
-          tsconfig: false,
-          target: `node${semver.minVersion(pkg.engines.node).version}`,
-          define: {
-            document: `undefined`,
-            XMLHttpRequest: `undefined`,
-            crypto: `undefined`,
-          },
-        }),
-        cjs({requireReturnsDefault: `preferred`}),
-        importURL(),
-        wrapOutput(),
-      ],
-    }),
-  ),
+  {
+    input: `./sources/esm-loader/loader.ts`,
+    output: {
+      file: `./sources/esm-loader/built-loader.js`,
+      format: `esm`,
+      generatedCode: `es2015`,
+      banner: `/* eslint-disable */\n// @ts-nocheck\n`,
+    },
+    external: [
+      `../.pnp.cjs`,
+    ],
+    plugins: [
+      resolve({
+        extensions: [`.mjs`, `.js`, `.ts`, `.tsx`, `.json`],
+        rootDir: path.join(__dirname, `../../`),
+        jail: path.join(__dirname, `../../`),
+        preferBuiltins: true,
+      }),
+      esbuild({
+        tsconfig: false,
+        target: `node${semver.minVersion(pkg.engines.node).version}`,
+        define: {
+          document: `undefined`,
+          XMLHttpRequest: `undefined`,
+          crypto: `undefined`,
+        },
+      }),
+      cjs({requireReturnsDefault: `preferred`}),
+      importURL(),
+      wrapOutput(),
+    ],
+  },
   ...[`index`, `microkernel`].map(name =>
     defineConfig({
       input: `./sources/${name}.ts`,

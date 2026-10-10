@@ -5,6 +5,8 @@ import {fileURLToPath, pathToFileURL}        from 'url';
 import {packageImportsResolve}               from '../../node/resolve';
 import * as loaderUtils                      from '../loaderUtils';
 
+import type {MaybePromise, NextHook}         from './types';
+
 let findPnpApi: any = (esmModule as any).findPnpApi;
 if (!findPnpApi) {
   // @ts-expect-error - reason TBS
@@ -20,14 +22,14 @@ if (!findPnpApi) {
 const pathRegExp = /^(?![a-zA-Z]:[\\/]|\\\\|\.{0,2}(?:\/|$))((?:node:)?(?:@[^/]+\/)?[^/]+)\/*(.*|)$/;
 const isRelativeRegexp = /^\.{0,2}\//;
 
-type ResolveContext = {
+export type ResolveContext = {
   conditions: Array<string>;
   parentURL: string | undefined;
 };
 
-type ResolveResult = {url: string, shortCircuit: boolean};
+export type ResolveResult = {url: string, shortCircuit: boolean};
 
-function resolvePrivateRequest(specifier: string, issuer: string, context: ResolveContext, nextResolve: typeof resolve): ResolveResult {
+function resolvePrivateRequest<TNext extends MaybePromise<ResolveResult>>(specifier: string, issuer: string, context: ResolveContext, nextResolve: NextHook<ResolveContext, TNext>): TNext | ResolveResult {
   const resolved = packageImportsResolve({
     name: specifier,
     base: pathToFileURL(issuer),
@@ -47,19 +49,19 @@ function resolvePrivateRequest(specifier: string, issuer: string, context: Resol
   }
 }
 
-export function resolve(
+export function resolve<TNext extends MaybePromise<ResolveResult>>(
   originalSpecifier: string,
   context: ResolveContext,
-  nextResolve: typeof resolve,
-): ResolveResult {
+  nextResolve: NextHook<ResolveContext, TNext>,
+): TNext | ResolveResult {
   if (!findPnpApi || isBuiltin(originalSpecifier))
-    return nextResolve(originalSpecifier, context, nextResolve);
+    return nextResolve(originalSpecifier, context);
 
   let specifier = originalSpecifier;
   const url = loaderUtils.tryParseURL(specifier, isRelativeRegexp.test(specifier) ? context.parentURL : undefined);
   if (url) {
     if (url.protocol !== `file:`)
-      return nextResolve(originalSpecifier, context, nextResolve);
+      return nextResolve(originalSpecifier, context);
 
     specifier = fileURLToPath(url);
   }
@@ -73,7 +75,7 @@ export function resolve(
   // zip file and the issuer doesn't belong to a pnpapi
   const pnpapi = findPnpApi(issuer) ?? (url ? findPnpApi(specifier) : null);
   if (!pnpapi)
-    return nextResolve(originalSpecifier, context, nextResolve);
+    return nextResolve(originalSpecifier, context);
 
   if (specifier.startsWith(`#`))
     return resolvePrivateRequest(specifier, issuer, context, nextResolve);
