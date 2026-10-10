@@ -81,7 +81,7 @@ jobs:
       run: |
         if [[ $(git diff --name-only "$(git merge-base origin/"$TARGET_BRANCH" HEAD)" HEAD -- 'packages/yarnpkg-{fslib,libzip,pnp}/sources/**/*' | wc -l) -gt 0 ]]; then
           node ./scripts/run-yarn.js build:pnp:hook
-          [[ $(git diff --name-only packages/yarnpkg-pnp/sources/{hook.js,esm-loader/built-loader.js} | wc -l) -eq 0 ]]
+          [[ $(git diff --name-only packages/yarnpkg-pnp/sources/{hook.js,esm-loader/built-loader.js,esm-loader/built-register.js} | wc -l) -eq 0 ]]
         fi
       shell: bash
       if: |

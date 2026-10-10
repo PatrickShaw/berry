@@ -4,12 +4,13 @@ import path           from 'path';
 
 import * as nodeUtils from '../loader/nodeUtils';
 
-export async function tryReadFile(path: NativePath): Promise<string | null> {
+// Sync so the hooks can also be registered in-thread via `module.registerHooks`
+export function tryReadFile(path: NativePath): string | undefined {
   try {
-    return await fs.promises.readFile(path, `utf8`);
+    return fs.readFileSync(path, `utf8`);
   } catch (error) {
     if (error.code === `ENOENT`)
-      return null;
+      return undefined;
 
     throw error;
   }

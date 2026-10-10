@@ -785,6 +785,13 @@
       "type": "boolean",
       "default": false
     },
+    "pnpEnableStableLoader": {
+      "_package": "@yarnpkg/plugin-pnp",
+      "title": "Define whether the ESM loader should use the stable `module.registerHooks` API.",
+      "description": "If true, the generated ESM loader (`.pnp.loader.mjs`) registers its hooks in-thread with `module.registerHooks` and is injected with `--import` instead of `--experimental-loader`. Requires Node.js v22.15.0+ or v23.5.0+. Since the hooks run in-thread, they don't apply to imports made by other off-thread loaders.",
+      "type": "boolean",
+      "default": false
+    },
     "pnpEnableInlining": {
       "_package": "@yarnpkg/plugin-pnp",
       "title": "Define whether to store the PnP data in the generated file or not.",

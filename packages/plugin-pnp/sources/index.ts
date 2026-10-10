@@ -39,7 +39,7 @@ async function setupScriptEnvironment(project: Project, env: NodeJS.ProcessEnv, 
   // TODO: Drop the question mark in the RegExp after .pnp.js files stop being used.
   // TODO: Support `-r` as an alias for `--require` (in all packages)
   const pnpRegularExpression = /\s*--require\s+\S*\.pnp\.c?js\s*/g;
-  const esmLoaderExpression = /\s*--experimental-loader\s+\S*\.pnp\.loader\.mjs\s*/;
+  const esmLoaderExpression = /\s*--(?:experimental-loader|import)\s+\S*\.pnp\.loader\.mjs\s*/;
   const packageMapExpression = /\s*--experimental-package-map(?:=|\s+)(?:"[^"]*"|'[^']*'|\S+)\s*/g;
 
   const nodeOptions = (env.NODE_OPTIONS ?? ``)
@@ -73,8 +73,11 @@ async function setupScriptEnvironment(project: Project, env: NodeJS.ProcessEnv, 
   const pnpPath = getPnpPath(project);
   let pnpRequire = `--require ${quotePathIfNeeded(npath.fromPortablePath(pnpPath.cjs))}`;
 
-  if (xfs.existsSync(pnpPath.esmLoader))
-    pnpRequire = `${pnpRequire} --experimental-loader ${pathToFileURL(npath.fromPortablePath(pnpPath.esmLoader)).href}`;
+  if (xfs.existsSync(pnpPath.esmLoader)) {
+    // The stable loader registers its hooks in-thread when imported, rather than being an off-thread loader module
+    const esmLoaderFlag = project.configuration.get(`pnpEnableStableLoader`) ? `--import` : `--experimental-loader`;
+    pnpRequire = `${pnpRequire} ${esmLoaderFlag} ${pathToFileURL(npath.fromPortablePath(pnpPath.esmLoader)).href}`;
+  }
 
   if (xfs.existsSync(pnpPath.cjs)) {
     extraNodeOptions.unshift(pnpRequire);
@@ -102,6 +105,7 @@ declare module '@yarnpkg/core' {
     pnpShebang: string;
     pnpIgnorePatterns: Array<string>;
     pnpEnableEsmLoader: boolean;
+    pnpEnableStableLoader: boolean;
     pnpEnableInlining: boolean;
     pnpFallbackMode: string;
     pnpUnpluggedFolder: PortablePath;
@@ -175,6 +179,11 @@ const plugin: Plugin<CoreHooks & StageHooks> = {
     },
     pnpEnableEsmLoader: {
       description: `If true, Yarn will generate an ESM loader (\`.pnp.loader.mjs\`). If this is not explicitly set Yarn tries to automatically detect whether ESM support is required.`,
+      type: SettingsType.BOOLEAN,
+      default: false,
+    },
+    pnpEnableStableLoader: {
+      description: `If true, the ESM loader will register its hooks with \`module.registerHooks\` and be injected with \`--import\` rather than \`--experimental-loader\`. Requires Node.js v22.15.0+ or v23.5.0+, and doesn't apply to imports made by other off-thread loaders.`,
       type: SettingsType.BOOLEAN,
       default: false,
     },

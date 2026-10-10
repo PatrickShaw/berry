@@ -1,5 +1,4 @@
 import {PortablePath}                        from '@yarnpkg/fslib';
-import fs                                    from 'fs';
 import esmModule, {createRequire, isBuiltin} from 'module';
 import {fileURLToPath, pathToFileURL}        from 'url';
 
@@ -26,23 +25,14 @@ type ResolveContext = {
   parentURL: string | undefined;
 };
 
-function tryReadFile(filePath: string) {
-  try {
-    return fs.readFileSync(filePath, `utf8`);
-  } catch (err) {
-    if (err.code === `ENOENT`)
-      return undefined;
+type ResolveResult = {url: string, shortCircuit: boolean};
 
-    throw err;
-  }
-}
-
-async function resolvePrivateRequest(specifier: string, issuer: string, context: ResolveContext, nextResolve: typeof resolve): Promise<{url: string, shortCircuit: boolean}> {
+function resolvePrivateRequest(specifier: string, issuer: string, context: ResolveContext, nextResolve: typeof resolve): ResolveResult {
   const resolved = packageImportsResolve({
     name: specifier,
     base: pathToFileURL(issuer),
     conditions: new Set(context.conditions),
-    readFileSyncFn: tryReadFile,
+    readFileSyncFn: loaderUtils.tryReadFile,
   });
 
   if (resolved instanceof URL) {
@@ -57,11 +47,11 @@ async function resolvePrivateRequest(specifier: string, issuer: string, context:
   }
 }
 
-export async function resolve(
+export function resolve(
   originalSpecifier: string,
   context: ResolveContext,
   nextResolve: typeof resolve,
-): Promise<{url: string, shortCircuit: boolean}> {
+): ResolveResult {
   if (!findPnpApi || isBuiltin(originalSpecifier))
     return nextResolve(originalSpecifier, context, nextResolve);
 
@@ -100,7 +90,7 @@ export async function resolve(
     if (subPath === `` && dependencyName !== `pnpapi`) {
       const resolved = pnpapi.resolveToUnqualified(`${dependencyName}/package.json`, issuer);
       if (resolved) {
-        const content = await loaderUtils.tryReadFile(resolved);
+        const content = loaderUtils.tryReadFile(resolved);
         if (content) {
           const pkg = JSON.parse(content);
           allowLegacyResolve = pkg.exports == null;

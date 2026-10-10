@@ -1,8 +1,36 @@
 import {Filename, npath, ppath, xfs}                                                                                            from '@yarnpkg/fslib';
 import {ALLOWS_EXTENSIONLESS_FILES, HAS_LOADERS_AFFECTING_LOADERS, SUPPORTS_IMPORT_ATTRIBUTES, SUPPORTS_IMPORT_ATTRIBUTES_ONLY} from '@yarnpkg/pnp/sources/esm-loader/loaderFlags';
+import * as nodeModule                                                                                                          from 'module';
 import {pathToFileURL}                                                                                                          from 'url';
 
-describe(`Plug'n'Play - ESM`, () => {
+const loaderModes = [
+  {name: `experimental loader`, pnpEnableStableLoader: false},
+  // `module.registerHooks` is only available from v22.15.0 / v23.5.0
+  ...(`registerHooks` in nodeModule ? [{name: `stable loader`, pnpEnableStableLoader: true}] : []),
+];
+
+describe.each(loaderModes)(`Plug'n'Play - ESM ($name)`, ({pnpEnableStableLoader}) => {
+  const makeTemporaryEnv = globalThis.makeTemporaryEnv.withConfig({pnpEnableStableLoader});
+
+  test(
+    `it should inject the ESM loader with the flag matching pnpEnableStableLoader`,
+    makeTemporaryEnv(
+      {
+        type: `module`,
+      },
+      async ({path, run, source}) => {
+        await run(`install`);
+
+        const {stdout} = await run(`node`, `-p`, `process.env.NODE_OPTIONS`);
+        const expectedFlag = pnpEnableStableLoader ? `--import` : `--experimental-loader`;
+        const unexpectedFlag = pnpEnableStableLoader ? `--experimental-loader` : `--import`;
+
+        expect(stdout).toContain(`${expectedFlag} ${pathToFileURL(npath.fromPortablePath(ppath.join(path, Filename.pnpEsmLoader))).href}`);
+        expect(stdout).not.toContain(unexpectedFlag);
+      },
+    ),
+  );
+
   test(
     `it should be able to import a node builtin`,
     makeTemporaryEnv(
@@ -833,7 +861,8 @@ describe(`Plug'n'Play - ESM`, () => {
   );
 
   // Tests /packages/yarnpkg-pnp/sources/esm-loader/fspatch.ts
-  (HAS_LOADERS_AFFECTING_LOADERS ? it : it.skip)(
+  // Hooks from `module.registerHooks` only run in-thread, so they can't affect off-thread loaders
+  (HAS_LOADERS_AFFECTING_LOADERS && !pnpEnableStableLoader ? it : it.skip)(
     `should support loaders importing named exports from commonjs files`,
     makeTemporaryEnv(
       {

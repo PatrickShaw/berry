@@ -39,6 +39,7 @@ export default [
       // Generated compressed hooks
       `packages/yarnpkg-pnp/sources/hook.js`,
       `packages/yarnpkg-pnp/sources/esm-loader/built-loader.js`,
+      `packages/yarnpkg-pnp/sources/esm-loader/built-register.js`,
       `packages/yarnpkg-pnp/sources/hook.raw.js`,
       // Minimize the diff with upstream
       `packages/yarnpkg-pnp/sources/node`,

@@ -55,11 +55,13 @@ jobs:
             SHOULD_RUN_AN_INSTALL=1
           fi
 
-          if git diff --name-only --diff-filter=U | grep packages/yarnpkg-pnp/sources/esm-loader/built-loader.js; then
-            git checkout --theirs packages/yarnpkg-pnp/sources/esm-loader/built-loader.js
-            yarn build:pnp:hook
-            SHOULD_RUN_AN_INSTALL=1
-          fi
+          for built in built-loader built-register; do
+            if git diff --name-only --diff-filter=U | grep packages/yarnpkg-pnp/sources/esm-loader/$built.js; then
+              git checkout --theirs packages/yarnpkg-pnp/sources/esm-loader/$built.js
+              yarn build:pnp:hook
+              SHOULD_RUN_AN_INSTALL=1
+            fi
+          done
 
           if [[ "$SHOULD_RUN_AN_INSTALL" == "1" ]]; then
             yarn install
